@@ -19,7 +19,7 @@ def registerNoesisTypes():
     noesis.setHandlerTypeCheck(handle, noepyCheckType)
     noesis.setHandlerLoadModel(handle, noepyLoadModel)
 
-    noesis.logPopup()
+    # noesis.logPopup()
     return 1
 
 #check if it's this type based on the data
