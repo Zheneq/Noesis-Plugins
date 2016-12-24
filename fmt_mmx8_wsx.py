@@ -29,6 +29,9 @@ def noepyCheckType(data):
 
 #load the model
 def noepyLoadModel(data, mdlList):
+    if noesis.NOESIS_PLUGINAPI_VERSION < 73:
+        noesis.messagePrompt("This plugin requires Noesis v4.2 or higher.")
+        return 0
     wsx = WSXFile(NoeBitStream(data))
     return wsx.load(mdlList)
 
