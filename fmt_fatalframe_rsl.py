@@ -15,8 +15,6 @@ def registerNoesisTypes():
 	handle = noesis.register("Fatal Frame 4 Archive", ".rsl")
 	noesis.setHandlerTypeCheck(handle, noepyCheckType)
 	noesis.setHandlerLoadModel(handle, noepyLoadModel)
-
-	noesis.logPopup()
 	return 1
 
 #check if it's this type based on the data
