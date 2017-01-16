@@ -92,18 +92,15 @@ class RMHG:
 	def load(self):
 		bs = self.bs
 		self.loadHeader()
-		temp = 0
 		for x in self.records:
 			bs.seek(x['addr'])
 			x['type'] = bs.readBytes(4).decode("ascii")
 			if not x['addr'] or not x['size']:
 				print("Empty", x['type'])
 			elif x['type'] in self.parsers:
-				if temp > 1: continue
 				subBs = NoeBitStream(bs.getBuffer(x['addr'], x['addr'] + x['size']))
 				x['data'] = self.parsers[x['type']](subBs, self.mdlList)
 				x['data'].load()
-				temp += 1
 			else:
 				print("Cannot parse", x['type'])
 
