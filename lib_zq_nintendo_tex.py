@@ -8,6 +8,7 @@
 
 from inc_noesis import *
 
+NINTEX_VERSION = 20171025
 
 NINTEX_I4     = 0x00
 NINTEX_I8     = 0x01
