@@ -8,6 +8,8 @@ Opens textures and most models in the game (and animations too).
 ## Star Wars: The Force Unleashed (Wii) (fmt_swtfu_wii_tex.py) ##
 Textures.
 
+***Reqires lib_zq_nintendo_tex.py!***
+
 ## Nintex lib (lib_zq_nintendo_tex.py) ##
 Work-in-progress library for extracting textures used on Nintendo consoles.
 
