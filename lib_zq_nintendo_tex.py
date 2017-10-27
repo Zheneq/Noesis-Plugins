@@ -8,7 +8,7 @@
 
 from inc_noesis import *
 
-NINTEX_VERSION = 20171025
+NINTEX_VERSION = 20171027
 
 NINTEX_I4     = 0x00
 NINTEX_I8     = 0x01
@@ -139,7 +139,7 @@ class textureParser:
                                 idx = (((y + y2 + y3) * width) + (x + x2 + x3)) * 4
                                 textureData[idx : idx + 4] = c[(b >> (6 - (x3 * 2))) & 0x3]
 
-        return NoeTexture('texture', width, height, textureData, noesis.NOESISTEX_RGBA32)
+        return NoeTexture("default", width, height, textureData, noesis.NOESISTEX_RGBA32)
 
     @staticmethod
     def rgba32(buffer, width, height, paletteBuffer=None, pixelFormat=None):
@@ -162,7 +162,7 @@ class textureParser:
                         offset += 2
                 offset += 32
 
-        return NoeTexture('texture', width, height, textureData, noesis.NOESISTEX_RGBA32)
+        return NoeTexture("default", width, height, textureData, noesis.NOESISTEX_RGBA32)
 
     @staticmethod
     def indexed(dataFormat, buffer, width, height, paletteBuffer, pixelFormat):
@@ -187,7 +187,7 @@ class textureParser:
                 textureData[i * 4:(i + 1) * 4] = palette[(b >> 4) & 0xf]
                 textureData[(i + 1) * 4:(i + 2) * 4] = palette[b & 0xf]
 
-        return NoeTexture('texture', width, height, textureData, noesis.NOESISTEX_RGBA32)
+        return NoeTexture("default", width, height, textureData, noesis.NOESISTEX_RGBA32)
 
     @staticmethod
     def c4(buffer, width, height, paletteBuffer, pixelFormat):
@@ -265,7 +265,7 @@ def convert(buffer, width, height, dataFormat, palette=None, pixelFormat=None):
                 textureData[i*4:(i+1)*4] = decoder((b >> 4) & 0xf )
                 textureData[(i+1)*4:(i+2)*4] = decoder(b & 0xf)
 
-        return NoeTexture('texture', width, height, textureData, noesis.NOESISTEX_RGBA32)
+        return NoeTexture("default", width, height, textureData, noesis.NOESISTEX_RGBA32)
 
     else:
         return decoder(buffer, width, height)
@@ -277,6 +277,16 @@ def readTexture(bs, width, height, dataFormat, palette=None, pixelFormat=None):
 
     tex = bs.getBuffer(bs.tell(), bs.tell() + size)
     return convert(tex, width, height, dataFormat, palette, pixelFormat)
+
+
+def getTextureSizeInBytes(width, height, dataFormat):
+    name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[dataFormat]
+    return bpp * ((width + bw - 1) // bw * bw) * ((height + bh - 1) // bh * bh) // 8
+
+
+def getPaletteSizeInBytes(dataFormat):
+    name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[dataFormat]
+    return paletteLen * 2  # palettes are always 16-bpp
 
     
 def registerNoesisTypes():
