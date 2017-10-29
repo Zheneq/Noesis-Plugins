@@ -481,7 +481,7 @@ class CGMG:
             else:
                 usedNames.add(b['name'])
             for i in range(len(rcm.meshes)):
-                rcm.meshes[i].name = b['name'] + namePostfix + "_mat" + str(i)
+                rcm.meshes[i].name = b['name'] + namePostfix + ("_mat" + str(i) if len(rcm.meshes) > 1 else '')
 
             self.meshList.extend(rcm.meshes)
 
