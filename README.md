@@ -2,8 +2,20 @@
 
 My plugins for [Noesis by Rich Whitehouse](http://richwhitehouse.com/index.php?content=inc_projects.php&showproject=91). 
 
-## Megaman X8 (fmt_mmx8_wsx.py & fmt_mmx8_wpg.py) ##
+If you find any issues with the plugins, feel free to contact me here or on Xentax or anywhere.
+
+## Megaman X8 (PC) (fmt_mmx8_wsx.py & fmt_mmx8_wpg.py) ##
 Opens textures and most models in the game (and animations too).
+
+## Fatal Frame 4 (Wii) (fmt_fatalframe_rsl.py) ##
+Textures and rigged models.
+***Reqires lib_zq_nintendo_tex.py!***
+
+Notes:
+
+ * Some meshes have flipped normals on rare occasion.
+ * Only diffuse textures are applied.
+ * Animation support can probably be added if requested.
 
 ## Star Wars: The Force Unleashed (Wii) (fmt_swtfu_wii_tex.py) ##
 Textures.
