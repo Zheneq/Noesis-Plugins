@@ -1,3 +1,8 @@
+# coding=utf-8
+
+# Fatal Frame 4 (Wii) plugin by Zhenёq
+# https://github.com/Zheneq/Noesis-Plugins
+
 from inc_noesis import *
 import noesis
 import rapi
