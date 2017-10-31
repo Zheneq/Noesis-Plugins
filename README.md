@@ -25,6 +25,12 @@ Textures.
 Textures.
 ***Reqires lib_zq_nintendo_tex.py!***
 
+## Silent Hill: Shattered Memories (fmt_silenthill_wii_tx.py) ##
+Textures.
+***Reqires lib_zq_nintendo_tex.py!***
+
+See [this topic](http://forum.xentax.com/viewtopic.php?f=18&t=15025).
+
 ## Nintex lib (lib_zq_nintendo_tex.py) ##
 Work-in-progress library for extracting textures used on Nintendo consoles.
 
