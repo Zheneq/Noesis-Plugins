@@ -47,6 +47,8 @@ class ZRSFile:
         self.pos = []
         self.norm = []
         self.uvs = []
+        self.vbon = []
+        self.wei  = []
         
         
     def load(self):
@@ -221,8 +223,9 @@ class ZRSFile:
             t = [max(t[i], x[i]) for i in range(miLen)]
             rapi.immUV2(self.uvs[x[3]])
             rapi.immNormal3(self.norm[x[1]])
-            rapi.immBoneIndex(self.vbon[x[0]])
-            rapi.immBoneWeight(self.wei[x[0]])
+            if self.vbon and self.wei:
+                rapi.immBoneIndex(self.vbon[x[0]])
+                rapi.immBoneWeight(self.wei[x[0]])
             rapi.immVertex3(self.pos[x[0]])
         print(t)
         rapi.immEnd()
