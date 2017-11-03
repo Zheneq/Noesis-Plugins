@@ -38,7 +38,7 @@ Uses etc1tool.exe by onepiecefreak3.
 
 https://github.com/onepiecefreak3/etc1tool/releases
 
-Unzip the executable into Noesis/Scenes folder.
+Put the executable into Noesis/Scenes folder.
 
 ## Nintex lib (lib_zq_nintendo_tex.py) ##
 Work-in-progress library for extracting textures used on Nintendo consoles.
