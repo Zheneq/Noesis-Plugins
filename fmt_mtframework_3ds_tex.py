@@ -72,6 +72,7 @@ def noepyLoadRGBA(data, texList):
             subprocess.Popen([os.path.join(noesis.getScenesPath(), 'etc1tool.exe'), '-d', 'etc1', 'etc1-rgba', str(header['width']), str(header['height']), str(alpha)], cwd=noesis.getScenesPath()).wait()
         except WindowsError:
             noesis.messagePrompt("Please, download etc1tool.exe by onepiecefreak3 (https://github.com/onepiecefreak3/etc1tool/releases) and put the executable into Noesis scenes folder.")
+            os.remove(tempETC1filename)
             return 0
         os.remove(tempETC1filename)
 
