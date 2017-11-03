@@ -31,6 +31,15 @@ Textures.
 
 See [this topic](http://forum.xentax.com/viewtopic.php?f=18&t=15025).
 
+## MT Framework Engine (3DS) (fmt_mtframework_3ds_tex.py) ##
+Textures.
+
+Uses etc1tool.exe by onepiecefreak3.
+
+https://github.com/onepiecefreak3/etc1tool/releases
+
+Unzip the executable into Noesis/Scenes folder.
+
 ## Nintex lib (lib_zq_nintendo_tex.py) ##
 Work-in-progress library for extracting textures used on Nintendo consoles.
 
