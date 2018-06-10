@@ -33,7 +33,7 @@ See [this topic](http://forum.xentax.com/viewtopic.php?f=18&t=15025).
 
 ## Fire Emblem (Wii) (fmt_fireemblem_gs.py & fmt_fireemblem_pak.py) ##
 Extracts .pak files.
-Opens .gs/.g files (mesh, uv, skeleton, no textures, no rig)
+Opens .gs/.g files (mesh, uv, skeleton, no textures, no rig). *Not properly tested.*
 
 ## MT Framework Engine (3DS) (fmt_mtframework_3ds_tex.py) ##
 Textures.
