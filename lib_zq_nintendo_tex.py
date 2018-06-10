@@ -7,6 +7,7 @@
 # http://wiki.tockdom.com - format specs
 
 from inc_noesis import *
+import rapi
 
 NINTEX_VERSION = 20171027
 
@@ -102,16 +103,25 @@ class pixelParser:
         t[3] = (rawPixel >> 8) & 0xFF
         return t
 
+    @staticmethod
+    def to_rgb565(r, g, b, a = 0):
+        r = r * 0x1f // 0xff & 0x1f
+        g = g * 0x3f // 0xff & 0x3f
+        b = b * 0x1f // 0xff & 0x1f
+        return r << 11 + g << 5 + b
+
 
 class textureParser:
     @staticmethod
     def cmpr(buffer, width, height, paletteBuffer=None, pixelFormat=None):
-        name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[0xE]
+        df = NINTEX_CMPR
+        name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[df]
         bs = NoeBitStream(buffer, NOE_BIGENDIAN)
-        textureData = bytearray(width * height * 4)
+        _width, _height = getStorageWH(width, height, df)
+        textureData = bytearray(_width * _height * 4)
 
-        for y in range(0, height, bh):
-            for x in range(0, width, bw):
+        for y in range(0, _height, bh):
+            for x in range(0, _width, bw):
                 for y2 in range(0, bh, 4):
                     for x2 in range(0, bw, 4):
                         c0 = bs.readUShort()
@@ -136,32 +146,33 @@ class textureParser:
                         for y3 in range(4):
                             b = bs.readUByte()
                             for x3 in range(4):
-                                idx = (((y + y2 + y3) * width) + (x + x2 + x3)) * 4
+                                idx = (((y + y2 + y3) * _width) + (x + x2 + x3)) * 4
                                 textureData[idx : idx + 4] = c[(b >> (6 - (x3 * 2))) & 0x3]
 
+        textureData = crop(textureData, _width, _height, 32, width, height)
         return NoeTexture("default", width, height, textureData, noesis.NOESISTEX_RGBA32)
 
     @staticmethod
     def rgba32(buffer, width, height, paletteBuffer=None, pixelFormat=None):
-        name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[0x6]
-        textureData = bytearray(width * height * 4)
+        df = NINTEX_RGBA32
+        name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[df]
+        _width, _height = getStorageWH(width, height, df)
+        textureData = bytearray(_width * _height * 4)
         offset = 0
 
-        for y in range(0, height, bh):
-            for x in range(0, width, bw):
+        for y in range(0, _height, bh):
+            for x in range(0, _width, bw):
                 for y2 in range(bh):
                     for x2 in range(bw):
-                        idx = (((y + y2) * width) + (x + x2)) * 4
-                        try:
-                            textureData[idx + 0] = buffer[offset + 33]
-                            textureData[idx + 1] = buffer[offset + 32]
-                            textureData[idx + 2] = buffer[offset + 1]
-                            textureData[idx + 3] = buffer[offset + 0]
-                        except IndexError:  # we can go outside textureData because image w/h do not have to be a factor of block w/h
-                            continue
+                        idx = (((y + y2) * _width) + (x + x2)) * 4
+                        textureData[idx + 0] = buffer[offset + 33]
+                        textureData[idx + 1] = buffer[offset + 32]
+                        textureData[idx + 2] = buffer[offset + 1]
+                        textureData[idx + 3] = buffer[offset + 0]
                         offset += 2
                 offset += 32
 
+        textureData = crop(textureData, _width, _height, 32, width, height)
         return NoeTexture("default", width, height, textureData, noesis.NOESISTEX_RGBA32)
 
     @staticmethod
@@ -224,18 +235,62 @@ pixelFormats = {
 }
 
 
+def crop(buffer, width, height, bpp, newWidth, newHeight):
+    if width == newWidth and height == newHeight:
+        return buffer
+
+    res = bytearray(newWidth * newHeight * bpp // 8)
+
+    lw = min(width, newWidth) * bpp // 8
+
+    for y in range(0, min(height, newHeight)):
+        dst = y * newWidth * bpp // 8
+        src = y * width * bpp // 8
+        res[dst: dst + lw] = buffer[src: src + lw]
+
+    return res
+
+
+def getStorageWH(width, height, df):
+    name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[df]
+    width  = (width  + bw - 1) // bw * bw
+    height = (height + bh - 1) // bh * bh
+    return width, height
+
+
 def unswizzle(buffer, width, height, df):
     name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[df]
     stripSize = bpp * bw // 8
 
-    result = bytearray(width * height * bpp // 8)
+    _width, _height = getStorageWH(width, height, df)
+
+    result = bytearray(_width * _height * bpp // 8)
     ptr = 0
 
-    for y in range(0, height, bh):
-        for x in range(0, width, bw):
+    for y in range(0, _height, bh):
+        for x in range(0, _width, bw):
+            for y2 in range(bh):
+                idx = (((y + y2) * _width) + x) * bpp // 8
+                result[idx : idx+stripSize] = buffer[ptr : ptr+stripSize]
+                ptr += stripSize
+
+    return crop(result, _width, _height, bpp, width, height)
+
+
+def swizzle(buffer, width, height, df):
+    name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[df]
+    stripSize = bpp * bw // 8
+
+    _width, _height = getStorageWH(width, height, df)
+
+    result = bytearray(_width * _height * bpp // 8)
+    ptr = 0
+
+    for y in range(0, _height, bh):
+        for x in range(0, _width, bw):
             for y2 in range(bh):
                 idx = (((y + y2) * width) + x ) * bpp // 8
-                result[idx : idx+stripSize] = buffer[ptr : ptr+stripSize]
+                result[ptr : ptr+stripSize] = buffer[idx : idx+stripSize]
                 ptr += stripSize
 
     return result
@@ -271,12 +326,27 @@ def convert(buffer, width, height, dataFormat, palette=None, pixelFormat=None):
         return decoder(buffer, width, height)
 
 
-def readTexture(bs, width, height, dataFormat, palette=None, pixelFormat=None):
-    name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[dataFormat]
-    size = width * height * bpp // 8
+def encode(buffer, width, height, dataFormat, palette=None, pixelFormat=None):
+    if dataFormat != NINTEX_RGB565:
+        raise ValueError("Data format not supported!")
 
+    res = rapi.swapEndianArray(rapi.imageEncodeRaw(buffer, width, height, "b5g6r5"), 2)
+
+    # res = NoeBitStream(bigEndian=NOE_BIGENDIAN)
+    # for i in range(height * width):
+    #     res.writeUShort(pixelParser.to_rgb565(buffer[4*i+0], buffer[4*i+1], buffer[4*i+2], buffer[4*i+3]))
+
+    return swizzle(res, width, height, dataFormat)
+
+
+def readTexture(bs, width, height, dataFormat, palette=None, pixelFormat=None):
+    size = getTextureSizeInBytes(width, height, dataFormat)
     tex = bs.getBuffer(bs.tell(), bs.tell() + size)
     return convert(tex, width, height, dataFormat, palette, pixelFormat)
+
+
+def writeTexture(buffer, width, height, dataFormat, palette=None, pixelFormat=None):
+    return encode(buffer, width, height, dataFormat, palette, pixelFormat)
 
 
 def getTextureSizeInBytes(width, height, dataFormat):
@@ -298,13 +368,23 @@ def registerNoesisTypes():
     
 def nintexLoadRGBA(data, texList):
     width = 512
+
     bs = NoeBitStream(data, NOE_BIGENDIAN)
+    # newbs = NoeBitStream()
+    # for i in range(bs.getSize() // 8):
+    #     newbs.writeUInt64(bs.readUInt64())
+    # bs = NoeBitStream(newbs.getBuffer(0x10, newbs.getSize()), NOE_BIGENDIAN)
+
+    texList.append(NoeTexture("dxt1", width, (bs.getSize() // width) & 0xFFFFFFFC, bs.getBuffer(), noesis.NOESISTEX_DXT1))
+    texList.append(NoeTexture("dxt3", width, (bs.getSize() // width) & 0xFFFFFFFC, bs.getBuffer(), noesis.NOESISTEX_DXT3))
+    texList.append(NoeTexture("dxt5", width, (bs.getSize() // width) & 0xFFFFFFFC, bs.getBuffer(), noesis.NOESISTEX_DXT5))
+
     for dataFormat in dataFormats:
         name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[dataFormat]
         if paletteLen:
             continue
             
-        height = (bs.getSize() * 8) // (width * bpp)
+        height = ((bs.getSize() * 8) // (width * bpp)) & (~7)
         texList.append(readTexture(bs, width, height, dataFormat))
         texList[-1].name = name
 
