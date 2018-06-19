@@ -6,18 +6,22 @@
 from inc_noesis import *
 import noesis
 import rapi
+from functools import reduce
 
 UV_SCALE = 0x4000
 NORM_SCALE = 0x800
 VERT_SCALE = 0x800
+WEI_SCALE = 0x100
 
 debug = 0
+
 
 def readMagic(bs, len = 4):
     try:
         return NoeBitStream(bs.readBytes(len)).readString()
     except UnicodeDecodeError:
         return ''
+
 
 def registerNoesisTypes():
     handle = noesis.register("Fire Emblem Model", ".gs")
@@ -28,12 +32,13 @@ def registerNoesisTypes():
     noesis.setHandlerLoadModel(handle, lambda data, mdlList: GFile(NoeBitStream(data), mdlList).load())
     return 1
 
+
 def noepyLoadModel(data, mdlList):
     ctx = rapi.rpgCreateContext()
     rapi.rpgSetOption(noesis.RPGOPT_TRIWINDBACKWARD, 1)
     GSFile(NoeBitStream(data), mdlList).load()
-    rapi.rpgClearBufferBinds()
     return len(mdlList)
+
 
 class GFile:
     def __init__(self, bs, mdlList):
@@ -65,7 +70,6 @@ class GFile:
             'unk4': bs.readUShort(),  # 0x1
             'nameAddr': bs.readUInt()
         } for i in range(boneNum)]  # F4 bytes
-
 
         for x in bones:
             bs.seek(namesAddr + x['nameAddr'])
@@ -102,6 +106,8 @@ class GSFile:
         self.norm = []
         self.uvs = []
         self.bones = []
+        self.boneIdx = []
+        self.boneWei = []
 
     def check(self):
         return self.bs.readUInt() == self.bs.getSize()
@@ -150,9 +156,9 @@ class GSFile:
             bs.seek(addrs[4])
             part4 = [{
                 'nameAddr': bs.readUInt(),
-                'unk': [bs.readUInt() for j in range(4)],
-                'addr': bs.readUInt(),
-                'junk': [bs.readUInt() for j in range(2)],
+                'unk':     [bs.readUInt() for j in range(4)],
+                'addr':     bs.readUInt(),
+                'junk':    [bs.readUInt() for j in range(2)],
             } for i in range(nums[4])]
 
             for x in part4:
@@ -171,15 +177,14 @@ class GSFile:
             bs.seek(addrs[5])
             part5 = [{
                 'nameAddr': bs.readUInt(),
-                'unk': [bs.readFloat() for j in range(6)],
-                'id': bs.readUShort(),
-                'junk': [bs.readUShort() for j in range(3)],
+                'unk':     [bs.readFloat() for j in range(6)],
+                'id':       bs.readUShort(),
+                'junk':    [bs.readUShort() for j in range(3)],
             } for i in range(nums[5])]
 
             for x in part5:
                 bs.seek(x['nameAddr'])
                 x['_name'] = bs.readString()
-
 
             if debug:
                 print(5)
@@ -201,9 +206,9 @@ class GSFile:
             bs.seek(addrs[9])
 
             part9 = {
-                'addr0': bs.readUInt(),
-                'addr1': bs.readUInt(),
-                'num0': bs.readUShort(),
+                'addrWeights': bs.readUInt(),
+                'addrVerts': bs.readUInt(),
+                'numWeights': bs.readUShort(),
                 'numVerts': bs.readUShort(),
                 'unk0': bs.readUShort(),
                 'unk1': bs.readUShort(),
@@ -214,15 +219,47 @@ class GSFile:
                 print('\t', part9)
                 print()
 
-            bs.seek(addrs[9] + part9['addr0'])
-            part9['data0'] = [[bs.readShort() for j in range(12)] for i in range(part9['num0'])]
+            # weights
+            bs.seek(addrs[9] + part9['addrWeights'])
+            part9['dataWeights'] = [{
+                'indices':  [bs.readShort() for j in range(4)],
+                'weights':  [bs.readUByte() / WEI_SCALE for j in range(4)],
+                'junk0':     bs.readUShort(),
+                'start':     bs.readUShort(),
+                'size':      bs.readUShort(),
+                'startAdd':  bs.readUByte(),
+                'unk':       bs.readUByte(),
+                'vertCount': bs.readUShort(),
+                'junk1':     bs.readUShort(),
+            } for i in range(part9['numWeights'])]
+
+            self.boneIdx = [[0]] * part9['numVerts']
+            self.boneWei = [[1.0]] * part9['numVerts']
+
+            for x in part9['dataWeights']:
+                x['_indices'] = list(filter((-1).__ne__, x['indices']))
+                if len(x['_indices']) > 1:
+                    x['_weights'] = x['weights'][:len(x['_indices'])]
+                else:
+                    x['_weights'] = [1.0]
+
+                startVert = (x['start'] + x['startAdd']) // 0xC
+                for i in range(startVert, startVert + x['vertCount']):
+                    self.boneIdx[i] = x['_indices']
+                    self.boneWei[i] = x['_weights']
 
             if debug:
-                for x in part9['data0'][0:32]:
+                for x in part9['dataWeights'][0:32]:
+                    print('\t', x)
+                print('...')
+                for x in part9['dataWeights'][-32:-1]:
                     print('\t', x)
                 print()
+                print('vertCount sum', reduce(lambda a,b: a + b, [x['vertCount'] for x in part9['dataWeights']]))
+                print('size sum', reduce(lambda a,b: a + b, [x['size'] for x in part9['dataWeights']]))
 
-            bs.seek(addrs[9] + part9['addr1'])
+            # pos / norm
+            bs.seek(addrs[9] + part9['addrVerts'])
 
             for i in range(part9['numVerts']):
                 self.pos.append([bs.readShort() / VERT_SCALE for j in range(3)])
@@ -230,10 +267,16 @@ class GSFile:
 
             if debug:
                 print('pos')
-                for x in self.pos[-32:-1]:
+                for x in self.pos[:16]:
+                    print('\t', x)
+                print('\t...')
+                for x in self.pos[-16:-1]:
                     print('\t', x)
                 print('norm')
-                for x in self.norm[-32:-1]:
+                for x in self.norm[:16]:
+                    print('\t', x)
+                print('\t...')
+                for x in self.norm[-16:-1]:
                     print('\t', x)
                 print()
 
@@ -242,15 +285,15 @@ class GSFile:
             bs.seek(addrs[6])
             part6 = [{
                 'part5Addr': bs.readUInt(),
-                'nextAddr': bs.readUInt(),
-                'unk0': [bs.readUByte() for j in range(4)],
-                'id': bs.readUShort(),
-                'unk2': [bs.readUByte() for j in range(6)],
-                'triAddr': bs.readUInt(),
-                'triSize': bs.readUInt(),
-                'junk': bs.readUInt(),
+                'nextAddr':  bs.readUInt(),
+                'unk0':     [bs.readUByte() for j in range(3)],
+                'matId':     bs.readUByte(),
+                'id':        bs.readUShort(),
+                'unk2':     [bs.readUByte() for j in range(6)],
+                'triAddr':   bs.readUInt(),
+                'triSize':   bs.readUInt(),
+                'junk':      bs.readUInt(),
             } for i in range(nums[6])]
-
 
             if debug:
                 print(6)
@@ -259,9 +302,14 @@ class GSFile:
                 print()
                 print()
 
+            # debug
+            _verts = set()
+            _norms = set()
+            _uvs   = set()
+
             for x in part6:
                 if addrs[4]:
-                    rapi.rpgSetMaterial(part4[x['unk0'][3]]['_name'])
+                    rapi.rpgSetMaterial(part4[x['matId']]['_name'])
 
                 # building tristrips
                 bs.seek(x['triAddr'])
@@ -278,12 +326,30 @@ class GSFile:
                         vert = bs.readUShort()
                         norm = bs.readUShort()
                         uv   = bs.readUShort()
+                        
+                        if debug:
+                            _verts.add(vert)
+                            _norms.add(norm)
+                            _uvs.add(uv)
 
                         rapi.immNormal3(self.norm[norm])
                         rapi.immUV2(self.uvs[uv])
+                        rapi.immBoneIndex(self.boneIdx[vert])
+                        rapi.immBoneWeight(self.boneWei[vert])
                         rapi.immVertex3(self.pos[vert])
 
                     rapi.immEnd()
+
+            if debug:
+                print('min vert', min(_verts))
+                print('max vert', max(_verts))
+                print('unique verts', len(_verts))
+                print('min norm', min(_norms))
+                print('max norm', max(_norms))
+                print('unique norms', len(_norms))
+                print('min uv', min(_uvs))
+                print('max uv', max(_uvs))
+                print('unique uvs', len(_uvs))
 
             rapi.rpgOptimize()
 
