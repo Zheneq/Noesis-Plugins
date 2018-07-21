@@ -9,7 +9,7 @@
 from inc_noesis import *
 import rapi
 
-NINTEX_VERSION = 20171027
+NINTEX_VERSION = 20180721
 
 NINTEX_I4     = 0x00
 NINTEX_I8     = 0x01
@@ -193,7 +193,7 @@ class textureParser:
             for i in range(width * height):
                 textureData[i * 4:(i + 1) * 4] = palette[bs.readUByte()]
         elif bpp == 4:
-            for i in range(width * height, 2):
+            for i in range(0, width * height, 2):
                 b = bs.readUByte()
                 textureData[i * 4:(i + 1) * 4] = palette[(b >> 4) & 0xf]
                 textureData[(i + 1) * 4:(i + 2) * 4] = palette[b & 0xf]
@@ -299,7 +299,6 @@ def swizzle(buffer, width, height, df):
 def convert(buffer, width, height, dataFormat, palette=None, pixelFormat=None):
     name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[dataFormat]
 
-
     if bSimple:
         tex = unswizzle(buffer, width, height, dataFormat)
         bs = NoeBitStream(tex, NOE_BIGENDIAN)
@@ -315,7 +314,7 @@ def convert(buffer, width, height, dataFormat, palette=None, pixelFormat=None):
             for i in range(width * height):
                 textureData[i*4:(i+1)*4] = decoder(bs.readUByte())
         elif bpp == 4:
-            for i in range(width * height, 2):
+            for i in range(0, width * height, 2):
                 b = bs.readUByte()
                 textureData[i*4:(i+1)*4] = decoder((b >> 4) & 0xf )
                 textureData[(i+1)*4:(i+2)*4] = decoder(b & 0xf)
@@ -323,7 +322,7 @@ def convert(buffer, width, height, dataFormat, palette=None, pixelFormat=None):
         return NoeTexture("default", width, height, textureData, noesis.NOESISTEX_RGBA32)
 
     else:
-        return decoder(buffer, width, height)
+        return decoder(buffer, width, height, palette, pixelFormat)
 
 
 def encode(buffer, width, height, dataFormat, palette=None, pixelFormat=None):
@@ -354,8 +353,10 @@ def getTextureSizeInBytes(width, height, dataFormat):
     return bpp * ((width + bw - 1) // bw * bw) * ((height + bh - 1) // bh * bh) // 8
 
 
-def getPaletteSizeInBytes(dataFormat):
+def getPaletteSizeInBytes(dataFormat, paletteLenOverride = 0):
     name, decoder, bpp, bw, bh, bSimple, paletteLen = dataFormats[dataFormat]
+    if paletteLenOverride > 0:
+        paletteLen = paletteLenOverride
     return paletteLen * 2  # palettes are always 16-bpp
 
     
@@ -367,7 +368,7 @@ def registerNoesisTypes():
     
     
 def nintexLoadRGBA(data, texList):
-    width = 512
+    width = 256
 
     bs = NoeBitStream(data, NOE_BIGENDIAN)
     # newbs = NoeBitStream()
