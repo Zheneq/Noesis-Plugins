@@ -18,6 +18,17 @@ def readMagic(bs, len = 4):
         return ''
 
 
+def readString(bs):
+    buf = bytearray()
+    while 1:
+        buf.append(bs.readUByte())
+        if not buf[-1]: break
+    try:
+        return buf.decode("ascii").split('\0')[0]
+    except UnicodeDecodeError:
+        return ''
+
+
 def registerNoesisTypes():
     handle = noesis.register("Fire Emblem archive", ".pak")
     noesis.setHandlerExtractArc(handle, extract)
@@ -37,8 +48,6 @@ def extract(fileName, fileLen, justChecking):
     numFiles = bs.readUShort()
     junk = bs.readUShort()
 
-    # print(numFiles)
-
     fileInfo = [{
         'junk': bs.readUInt(),
         'name': bs.readUInt(),
@@ -46,17 +55,14 @@ def extract(fileName, fileLen, justChecking):
         'size': bs.readUInt(),
     } for i in range(numFiles)]
 
-    # for x in fileInfo:
-    #     print(x)
-
-    valid = reduce(lambda a, b: a and b, [x['data'] + x['size'] < fileLen for x in fileInfo])
+    valid = reduce(lambda a, b: a and b, [x['data'] + x['size'] <= fileLen for x in fileInfo])
 
     if not valid or justChecking:
         return valid
 
     for x in fileInfo:
         bs.seek(x['name'])
-        name = bs.readString()
+        name = readString(bs)
         data = bs.getBuffer(x['data'], x['data'] + x['size'])
         rapi.exportArchiveFile(name, data)
 
