@@ -33,7 +33,11 @@ See [this topic](http://forum.xentax.com/viewtopic.php?f=18&t=15025).
 
 ## Fire Emblem (Wii) (fmt_fireemblem_gs.py & fmt_fireemblem_pak.py) ##
 Extracts .pak files.
-Opens .gs/.g files (mesh, uv, skeleton, weights, no textures). *Not properly tested.*
+Opens .gs/.g files (mesh, uv, skeleton, weights, vertex colors). 
+
+Notes:
+ * Requires fmt_wii_tpl.py (and lib_zq_nintendo_tex.py) to load textures but can do without it. Only diffuse textures are applied but all textures are loaded.
+ * Vertex colors are disabled by default. To enable them, change *vertex_colors = 0* to *vertex_colors = 1*. Likewise, you can disable texture loading by setting *textures* flag to 0.
 
 ## MT Framework Engine (3DS) (fmt_mtframework_3ds_tex.py) ##
 Textures.
@@ -43,6 +47,10 @@ Uses etc1tool.exe by onepiecefreak3.
 https://github.com/onepiecefreak3/etc1tool/releases
 
 Put the executable into Noesis/Scenes folder.
+
+## TPL format (fmt_wii_tpl.py) ##
+Common Wii texture format.
+***Reqires lib_zq_nintendo_tex.py!***
 
 ## Nintex lib (lib_zq_nintendo_tex.py) ##
 Work-in-progress library for extracting textures used on Nintendo consoles.
