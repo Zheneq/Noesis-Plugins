@@ -4,10 +4,7 @@
 # https://github.com/Zheneq/Noesis-Plugins
 
 from inc_noesis import *
-import noesis
-import rapi
-import math
-import glob
+import noesis, rapi, math, glob, os
 
 # load vertex colors
 vertex_colors = 0
