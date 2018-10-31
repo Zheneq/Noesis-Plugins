@@ -592,7 +592,11 @@ class CGMG(GrasshopperModel):
             ##########################################################
 
         rapi.rpgOptimize()
-        rcm = rapi.rpgConstructModel()
+        try:
+            rcm = rapi.rpgConstructModel()
+        except RuntimeError:
+            # no geometry
+            rcm = NoeModel()
         rcm.setModelMaterials(NoeModelMaterials(self.texList, self.matList))
         rcm.setBones(self.boneList)
 
