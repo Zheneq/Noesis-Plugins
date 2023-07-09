@@ -202,15 +202,15 @@ class textureParser:
 
     @staticmethod
     def c4(buffer, width, height, paletteBuffer, pixelFormat):
-        return indexed(0x08, dataFormat, buffer, width, height, paletteBuffer, pixelFormat)
+        return indexed(0x08, buffer, width, height, paletteBuffer, pixelFormat)
 
     @staticmethod
     def c8(buffer, width, height, paletteBuffer, pixelFormat):
-        return indexed(0x09, dataFormat, buffer, width, height, paletteBuffer, pixelFormat)
+        return indexed(0x09, buffer, width, height, paletteBuffer, pixelFormat)
 
     @staticmethod
     def c14x2(buffer, width, height, paletteBuffer, pixelFormat):
-        return indexed(0x0A, dataFormat, buffer, width, height, paletteBuffer, pixelFormat)
+        return indexed(0x0A, buffer, width, height, paletteBuffer, pixelFormat)
 
 
 dataFormats = {
